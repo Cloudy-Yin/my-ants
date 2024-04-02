@@ -1,7 +1,6 @@
 package ants
 
 import (
-	"fmt"
 	"runtime/debug"
 	"time"
 )
@@ -43,7 +42,6 @@ func (w *goWorkerWithFunc) run() {
 			if args == nil {
 				return
 			}
-			fmt.Println(args...)
 			w.pool.poolFunc(args...)
 			if ok := w.pool.revertWorker(w); !ok {
 				return
