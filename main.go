@@ -27,74 +27,73 @@ func main() {
 	var wg sync.WaitGroup
 	runTimes := 200
 
-	// 1. Use the common pool.
+	// // 1. Use the common pool.
 
-	// syncCalculateSum := func() {
-	// 	demoFunc()
-	// 	wg.Done()
-	// }
+	// // syncCalculateSum := func() {
+	// // 	demoFunc()
+	// // 	wg.Done()
+	// // }
 
-	resCh := make(chan int, 200)
-	for i := 0; i < runTimes; i++ {
-		wg.Add(1)
-		_ = ants.Submit(&ants.Task{
-			Handler: func(v ...interface{}) {
-				defer wg.Done()
-				//time.Sleep(time.Second * 2)
-				fmt.Println("this is handler func for task:", v[0].(int), v[1].(int), v[2].(int))
-				resCh <- v[0].(int) + v[1].(int) + v[2].(int)
-			},
-			Params: []interface{}{i, i + 2, i + 4},
-		})
-	}
-
-	wg.Wait()
-	close(resCh)
-
-	sum := 0
-	for v := range resCh {
-		fmt.Println("resulte:", v)
-		sum += v
-	}
-
-	fmt.Printf("running goroutines: %d\n", ants.Running())
-	fmt.Printf("finish all tasks, sum : %v.\n", sum)
-
-	// // 2. Use the pool with a function,
-	// // set 10 to the capacity of goroutine pool and 1 second for expired duration.
 	// resCh := make(chan int, 200)
-	// p, _ := ants.NewPoolWithFunc(10, func(v ...interface{}) {
-	// 	params := v[0].([]interface{})
-	// 	fmt.Printf("var name type: %T, value: %v\n", params, params)
-	// 	fmt.Println("this is handler func for task:", params[0].(int), params[1].(int), params[2].(int))
-	// 	params[3].(chan int) <- params[0].(int) + params[1].(int) + params[2].(int)
-
-	// 	// for i := 0; i < len(params); i++ {
-	// 	// 	myFunc(int32(params[i].(int)))
-	// 	// }
-	// 	//time.Sleep(time.Second * 2)
-	// 	wg.Done()
-	// })
-	// defer p.Release()
-	// // Submit tasks one by one.
 	// for i := 0; i < runTimes; i++ {
 	// 	wg.Add(1)
-	// 	_ = p.Invoke(i, i+4, i+8, resCh)
+	// 	_ = ants.Submit(&ants.Task{
+	// 		Handler: func(v ...interface{}) {
+	// 			defer wg.Done()
+	// 			//time.Sleep(time.Second * 2)
+	// 			fmt.Println("this is handler func for task:", v[0].(int), v[1].(int), v[2].(int))
+	// 			resCh <- v[0].(int) + v[1].(int) + v[2].(int)
+	// 		},
+	// 		Params: []interface{}{i, i + 2, i + 4},
+	// 	})
 	// }
 
-	// go func() {
-	// 	wg.Wait()
-	// 	close(resCh)
-	// }()
+	// wg.Wait()
+	// close(resCh)
 
 	// sum := 0
 	// for v := range resCh {
-	// 	fmt.Println("result:", v)
+	// 	fmt.Println("resulte:", v)
 	// 	sum += v
 	// }
-	// fmt.Printf("running goroutines: %d\n", p.Running())
-	// fmt.Printf("finish all tasks, result is %d\n", sum)
-	// fmt.Printf("sum 10: %d\n", sum)
+
+	// fmt.Printf("running goroutines: %d\n", ants.Running())
+	// fmt.Printf("finish all tasks, sum : %v.\n", sum)
+
+	// 2. Use the pool with a function,
+	// set 10 to the capacity of goroutine pool and 1 second for expired duration.
+	resCh := make(chan int, 200)
+	p, _ := ants.NewPoolWithFunc(10, func(v ...interface{}) {
+		params := v[0].([]interface{})
+		fmt.Printf("var name type: %T, value: %v\n", params, params)
+		fmt.Println("this is handler func for task:", params[0].(int), params[1].(int), params[2].(int))
+		resCh <- params[0].(int) + params[1].(int) + params[2].(int)*2
+		for i := 0; i < len(params); i++ {
+			myFunc(int32(params[i].(int)))
+		}
+		//time.Sleep(time.Second * 2)
+		wg.Done()
+	})
+	defer p.Release()
+	// Submit tasks one by one.
+	for i := 0; i < runTimes; i++ {
+		wg.Add(1)
+		_ = p.Invoke(i, i+4, i+8)
+	}
+
+	go func() {
+		wg.Wait()
+		close(resCh)
+	}()
+
+	res := 0
+	for v := range resCh {
+		fmt.Println("result:", v)
+		res += v
+	}
+	fmt.Printf("running goroutines: %d\n", p.Running())
+	fmt.Printf("finish all tasks, result is %d\n", res)
+	fmt.Printf("sum 10: %d\n", sum)
 
 	// 	// 3. Use the MultiPool and set the capacity of the 10 goroutine pools to unlimited.
 	// 	// If you use -1 as the pool size parameter, the size will be unlimited.
